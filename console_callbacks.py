@@ -14,6 +14,7 @@ SAMPLESIZE = 2 # 16 bit integer
 MAXPERIODS = int(0.5 * RATE / PERIODSIZE) # 0.5s Buffer
 count_underruns = 0
 underrun_after_play = False
+active_session = False
 
 audio_arg_parser = argparse.ArgumentParser(add_help=False)
 audio_arg_parser.add_argument('--device', '-D', help='alsa output device', default='default')
@@ -48,8 +49,8 @@ class AlsaSink:
                 pcm = alsa.PCM(
                     type = alsa.PCM_PLAYBACK,
                     mode = alsa.PCM_NORMAL,
-		    device = self._args.device)
-		    #device = 'softvol')
+		    #device = self._args.device)
+		    device = 'softvol')
 
                 pcm.setchannels(CHANNELS)
                 pcm.setrate(RATE)
@@ -136,24 +137,31 @@ def debug_message(self, msg):
 	underrun_after_play = True
     elif "WARNING: Underrun" in ffi.string(msg):
 	count_underruns = count_underruns+1
+	print "underrun counter", count_underruns
+	print "underrrun flag", underrun_after_play
+
 	if count_underruns > 5 and underrun_after_play:
 		after_playing()
         	device.release()
 		count_underruns = 0
 		underrun_after_play = False
-   	else:
-		underrun_after_play = False
+    else:
+	underrun_after_play = False
 
 #Playback callbacks
 @ffi.callback('void(SpPlaybackNotify type, void *userdata)')
 @userdata_wrapper
 def playback_notify(self, type):
+    global active_session
     if type == lib.kSpPlaybackNotifyPlay:
         print "kSpPlaybackNotifyPlay"
+	if active_session:
+		before_playing()
 	device.acquire()
     elif type == lib.kSpPlaybackNotifyPause:
         print "kSpPlaybackNotifyPause"
-	after_playing()
+	if active_session:
+		after_playing()
         device.release()
     elif type == lib.kSpPlaybackNotifyTrackChanged:
         print "kSpPlaybackNotifyTrackChanged"
@@ -171,11 +179,13 @@ def playback_notify(self, type):
         print "kSpPlaybackNotifyRepeatDisabled"
     elif type == lib.kSpPlaybackNotifyBecameActive:
         print "kSpPlaybackNotifyBecameActive"
-	before_playing()
+	#before_playing()
+	active_session = True
         session.activate()
     elif type == lib.kSpPlaybackNotifyBecameInactive:
         print "kSpPlaybackNotifyBecameInactive"
-	after_playing()
+	active_session = False
+	#after_playing()
         device.release()
         session.deactivate()
     elif type == lib.kSpPlaybackNotifyPlayTokenLost:
@@ -183,7 +193,7 @@ def playback_notify(self, type):
 	after_playing()
     elif type == lib.kSpPlaybackEventAudioFlush:
         print "kSpPlaybackEventAudioFlush"
-    	before_playing()
+    	#before_playing()
     else:
         print "UNKNOWN PlaybackNotify {}".format(type)
 
@@ -261,8 +271,10 @@ playback_callbacks = ffi.new('SpPlaybackCallbacks *', [
 
 def before_playing():
 	#You can put some stuff here tbd before playback starts
-	#urllib2.urlopen("http://192.168.1.210/cgi-bin/air_an.cgi").read()
+	print "before playing"
+	urllib2.urlopen("http://192.168.1.210/cgi-bin/air_an.cgi").read()
 	
 def after_playing():
 	#You can put some stuff here tbd after playback stops
-	#urllib2.urlopen("http://192.168.1.210/cgi-bin/air_aus.cgi").read()
+	print "after playing"
+	urllib2.urlopen("http://192.168.1.210/cgi-bin/air_aus.cgi").read()
