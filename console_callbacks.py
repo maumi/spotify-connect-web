@@ -90,6 +90,7 @@ class AlsaSink:
 session = PlaybackSession()
 device = AlsaSink(session, args)
 mixer = alsa.Mixer(args.mixer)
+#mixer = alsa.Mixer(control="Master",cardindex=1)
 
 def userdata_wrapper(f):
     def inner(*args):
