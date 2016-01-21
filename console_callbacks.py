@@ -3,6 +3,7 @@ import alsaaudio as alsa
 import json
 import Queue
 import urllib2
+import time
 from threading import Thread
 import threading
 from connect_ffi import ffi, lib
@@ -12,8 +13,6 @@ CHANNELS = 2
 PERIODSIZE = 44100 / 4 # 0.25s
 SAMPLESIZE = 2 # 16 bit integer
 MAXPERIODS = int(0.5 * RATE / PERIODSIZE) # 0.5s Buffer
-count_underruns = 0
-underrun_after_play = False
 active_session = False
 
 audio_arg_parser = argparse.ArgumentParser(add_help=False)
@@ -131,23 +130,6 @@ def connection_new_credentials(self, blob):
 @userdata_wrapper
 def debug_message(self, msg):
     print ffi.string(msg)
-    global count_underruns
-    global underrun_after_play
-    if "Requesting Bytes" in ffi.string(msg):
-	count_underruns = 0
-	underrun_after_play = True
-    elif "WARNING: Underrun" in ffi.string(msg):
-	count_underruns = count_underruns+1
-	print "underrun counter", count_underruns
-	print "underrrun flag", underrun_after_play
-
-	if count_underruns > 5 and underrun_after_play:
-		after_playing()
-        	device.release()
-		count_underruns = 0
-		underrun_after_play = False
-    else:
-	underrun_after_play = False
 
 #Playback callbacks
 @ffi.callback('void(SpPlaybackNotify type, void *userdata)')
@@ -274,6 +256,8 @@ def before_playing():
 	#You can put some stuff here tbd before playback starts
 	print "before playing"
 	urllib2.urlopen("http://192.168.1.210:8083/fhem?cmd=set%20Anlage%20on").read()
+	time.sleep(2)
+	urllib2.urlopen("http://192.168.1.210:8083/fhem?cmd=set%20Anlage_switch3%20on").read()
 	#urllib2.urlopen("http://192.168.1.210:8083/fhem?cmd=set%20Boxen%20on").read()
 	
 def after_playing():
