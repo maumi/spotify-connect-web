@@ -273,9 +273,11 @@ playback_callbacks = ffi.new('SpPlaybackCallbacks *', [
 def before_playing():
 	#You can put some stuff here tbd before playback starts
 	print "before playing"
-	urllib2.urlopen("http://192.168.1.210/cgi-bin/air_an.cgi").read()
+	urllib2.urlopen("http://192.168.1.210:8083/fhem?cmd=set%20Anlage%20on").read()
+	#urllib2.urlopen("http://192.168.1.210:8083/fhem?cmd=set%20Boxen%20on").read()
 	
 def after_playing():
 	#You can put some stuff here tbd after playback stops
 	print "after playing"
-	urllib2.urlopen("http://192.168.1.210/cgi-bin/air_aus.cgi").read()
+	urllib2.urlopen("http://192.168.1.210:8083/fhem?cmd=set%20Anlage%20off").read()
+	#urllib2.urlopen("http://192.168.1.210:8083/fhem?cmd=set%20Boxen%20off").read()
